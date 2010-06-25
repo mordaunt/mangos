@@ -744,7 +744,7 @@ ChatCommand * ChatHandler::getCommandTable()
         { "damage",         SEC_ADMINISTRATOR,  false, &ChatHandler::HandleDamageCommand,              "", NULL },
         { "combatstop",     SEC_GAMEMASTER,     false, &ChatHandler::HandleCombatStopCommand,          "", NULL },
         { "ahbotoptions",   SEC_ADMINISTRATOR,  true,  &ChatHandler::HandleAHBotOptionsCommand,        "", NULL },
-        { "flusharenapoints",SEC_ADMINISTRATOR, false, &ChatHandler::HandleFlushArenaPointsCommand,    "", NULL },
+        { "flusharenapoints",SEC_ADMINISTRATOR, true, &ChatHandler::HandleFlushArenaPointsCommand,    "", NULL },
         { "repairitems",    SEC_GAMEMASTER,     true,  &ChatHandler::HandleRepairitemsCommand,         "", NULL },
         { "stable",         SEC_ADMINISTRATOR,  false, &ChatHandler::HandleStableCommand,              "", NULL },
         { "waterwalk",      SEC_GAMEMASTER,     false, &ChatHandler::HandleWaterwalkCommand,           "", NULL },
