@@ -42,6 +42,8 @@
 INSTANTIATE_SINGLETON_2(ObjectAccessor, CLASS_LOCK);
 INSTANTIATE_CLASS_MUTEX(ObjectAccessor, ACE_Thread_Mutex);
 
+ACE_Thread_Mutex ObjectAccessor::m_Lock;
+
 ObjectAccessor::ObjectAccessor() {}
 ObjectAccessor::~ObjectAccessor()
 {
@@ -117,6 +119,15 @@ void ObjectAccessor::KickPlayer(ObjectGuid guid)
         s->KickPlayer();                            // mark session to remove at next session list update
         s->LogoutPlayer(false);                     // logout player without waiting next session list update
     }
+}
+
+Pet* ObjectAccessor::FindPet(ObjectGuid guid)
+{
+    Pet * pet = HashMapHolder<Pet>::Find(guid);;
+    if(!pet || !pet->IsInWorld())
+        return NULL;
+
+    return pet;
 }
 
 Corpse*

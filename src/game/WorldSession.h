@@ -234,7 +234,7 @@ class MANGOS_DLL_SPEC WorldSession
         void SendPetitionQueryOpcode(ObjectGuid petitionguid);
 
         //pet
-        void SendPetNameQuery(uint64 guid, uint32 petnumber);
+        void SendPetNameQuery(ObjectGuid guid, uint32 petnumber);
         void SendStablePet(ObjectGuid guid);
         void SendStableResult(uint8 res);
         bool CheckStableMaster(ObjectGuid guid);
@@ -429,8 +429,16 @@ class MANGOS_DLL_SPEC WorldSession
         void HandleMovementOpcodes(WorldPacket& recvPacket);
         void HandleSetActiveMoverOpcode(WorldPacket &recv_data);
         void HandleMoveNotActiveMoverOpcode(WorldPacket &recv_data);
-        void HandleDismissControlledVehicle(WorldPacket &recv_data);
         void HandleMoveTimeSkippedOpcode(WorldPacket &recv_data);
+
+        void HandleDismissControlledVehicle(WorldPacket &recv_data);
+        void HandleRequestVehicleExit(WorldPacket &recv_data);
+        void HandleRequestVehiclePrevSeat(WorldPacket &recv_data);
+        void HandleRequestVehicleNextSeat(WorldPacket &recv_data);
+        void HandleRequestVehicleSwitchSeat(WorldPacket &recv_data);
+        void HandleEnterPlayerVehicle(WorldPacket &recv_data);
+        void HandleEjectPasenger(WorldPacket &recv_data);
+        void HandleChangeSeatsOnControlledVehicle(WorldPacket &recv_data);
 
         void HandleRequestRaidInfoOpcode( WorldPacket & recv_data );
 
@@ -764,6 +772,7 @@ class MANGOS_DLL_SPEC WorldSession
         void HandleCalendarGetNumPending(WorldPacket& recv_data);
 
         void HandleSpellClick(WorldPacket& recv_data);
+        void HandleMirrorImageDataRequest( WorldPacket & recv_data );
         void HandleAlterAppearanceOpcode(WorldPacket& recv_data);
         void HandleRemoveGlyphOpcode(WorldPacket& recv_data);
         void HandleCharCustomizeOpcode(WorldPacket& recv_data);
@@ -775,6 +784,7 @@ class MANGOS_DLL_SPEC WorldSession
         void HandleReadyForAccountDataTimesOpcode(WorldPacket& recv_data);
         void HandleQueryQuestsCompletedOpcode(WorldPacket& recv_data);
         void HandleQuestPOIQueryOpcode(WorldPacket& recv_data);
+
     private:
         // private trade methods
         void moveItems(Item* myItems[], Item* hisItems[]);

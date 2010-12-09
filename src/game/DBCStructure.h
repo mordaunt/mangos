@@ -892,8 +892,12 @@ struct GameObjectDisplayInfoEntry
     uint32      Displayid;                                  // 0        m_ID
     // char* filename;                                      // 1
     // uint32 unknown2[10];                                 // 2-11     unknown data
-    float  unknown12;                                       // 12-17    unknown size data, use first value as interact dist, mostly in hacks way
-    // float  unknown13[5];                                 // 12-17    unknown size data
+    float       minX;
+    float       minY;
+    float       minZ;
+    float       maxX;
+    float       maxY;
+    float       maxZ;
     // uint32 unknown18;                                    // 18       unknown data
 };
 
@@ -1148,7 +1152,7 @@ struct MapEntry
     float   ghost_entrance_y;                               // 61 entrance y coordinate in ghost mode  (in most cases = normal entrance)
     //uint32  timeOfDayOverride;                            // 62 time of day override
     uint32  addon;                                          // 63 expansion
-                                                            // 64 some kind of time?
+    uint32  instanceResetOffset;                            // 64 offset used instead of first period while creating reset table
     //uint32 maxPlayers;                                    // 65 max players
 
     // Helpers
@@ -1168,7 +1172,7 @@ struct MapEntry
             MapID==209 || MapID==269 || MapID==309 ||       // TanarisInstance, CavernsOfTime, Zul'gurub
             MapID==509 || MapID==534 || MapID==560 ||       // AhnQiraj, HyjalPast, HillsbradPast
             MapID==568 || MapID==580 || MapID==595 ||       // ZulAman, Sunwell Plateau, Culling of Stratholme
-            MapID==615 || MapID==616;                       // Obsidian Sanctum, Eye Of Eternity
+            MapID==603 || MapID==615 || MapID==616;         // Ulduar, Obsidian Sanctum, Eye Of Eternity
     }
 
     bool IsContinent() const
@@ -1630,9 +1634,9 @@ struct SpellItemEnchantmentEntry
     uint32      slot;                                       // 32       m_flags
     uint32      GemID;                                      // 33       m_src_itemID
     uint32      EnchantmentCondition;                       // 34       m_condition_id
-    //uint32      requiredSkill;                            // 35       m_requiredSkillID
-    //uint32      requiredSkillValue;                       // 36       m_requiredSkillRank
-                                                            // 37       new in 3.1
+    uint32      requiredSkill;                              // 35       m_requiredSkillID
+    uint32      requiredSkillValue;                         // 36       m_requiredSkillRank
+    uint32      requiredLevel;                              // 37       m_requiredLevel
 };
 
 struct SpellItemEnchantmentConditionEntry
@@ -1781,7 +1785,7 @@ struct VehicleEntry
     uint32  m_uiLocomotionType;                             // 34
     float   m_msslTrgtImpactTexRadius;                      // 35
     uint32  m_uiSeatIndicatorType;                          // 36
-                                                            // 37, new in 3.1 - powerType
+    uint32  m_powerType;                                    // 37, new in 3.1 - powerType
                                                             // 38, new in 3.1
                                                             // 39, new in 3.1
 };
@@ -1835,6 +1839,7 @@ struct VehicleSeatEntry
     int32   m_uiSkin;                                       // 44
     uint32  m_flagsB;                                       // 45
                                                             // 46-57 added in 3.1, floats mostly
+    bool IsUsable() const { return m_flags & SEAT_FLAG_USABLE; }
 };
 
 struct WMOAreaTableEntry
@@ -1852,6 +1857,7 @@ struct WMOAreaTableEntry
     uint32 areaId;                                          // 10 link to AreaTableEntry.ID
     //char *Name[16];
     //uint32 nameFlags;
+
 };
 
 struct WorldMapAreaEntry

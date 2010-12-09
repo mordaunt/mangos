@@ -35,9 +35,13 @@ libmangosgame_a_SOURCES = \
 	AchievementMgr.cpp \
 	AggressorAI.cpp \
 	AggressorAI.h \
+	AntiCheat.cpp \
+	AntiCheat.h \
 	ArenaTeam.cpp \
 	ArenaTeam.h \
 	ArenaTeamHandler.cpp \
+	AuctionHouseBot.cpp \
+	AuctionHouseBot.h \
 	AuctionHouseHandler.cpp \
 	AuctionHouseMgr.cpp \
 	AuctionHouseMgr.h \
@@ -92,6 +96,10 @@ libmangosgame_a_SOURCES = \
 	Chat.cpp \
 	Chat.h \
 	ChatHandler.cpp \
+	ChatLexicsCutter.cpp \
+	ChatLexicsCutter.h \
+	ChatLog.cpp \
+	ChatLog.h \
 	CombatHandler.cpp \
 	ConfusedMovementGenerator.cpp \
 	ConfusedMovementGenerator.h \
@@ -181,6 +189,8 @@ libmangosgame_a_SOURCES = \
 	Map.h \
 	MapManager.cpp \
 	MapManager.h \
+	MapUpdater.cpp \
+	MapUpdater.h \
 	MapReference.h \
 	MapRefManager.h \
 	MiscHandler.cpp \
@@ -279,6 +289,7 @@ libmangosgame_a_SOURCES = \
 	UpdateFields.h \
 	UpdateMask.h \
 	Vehicle.cpp \
+	VehicleHandler.cpp \
 	Vehicle.h \
 	VoiceChatHandler.cpp \
 	WaypointManager.cpp \

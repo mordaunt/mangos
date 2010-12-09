@@ -208,6 +208,10 @@ void WorldSession::HandleGroupAcceptOpcode( WorldPacket & recv_data )
     // everything is fine, do it, PLAYER'S GROUP IS SET IN ADDMEMBER!!!
     if(!group->AddMember(GetPlayer()->GetObjectGuid(), GetPlayer()->GetName()))
         return;
+
+    // Frozen Mod
+    group->BroadcastGroupUpdate();
+    // Frozen Mod
 }
 
 void WorldSession::HandleGroupDeclineOpcode( WorldPacket & /*recv_data*/ )
@@ -797,6 +801,9 @@ void WorldSession::BuildPartyMemberStatsChangedPacket(Player *player, WorldPacke
         else
             *data << uint64(0);
     }
+
+    if (mask & GROUP_UPDATE_FLAG_VEHICLE_SEAT)
+        *data << uint32(player->m_movementInfo.GetTransportDBCSeat());
 }
 
 /*this procedure handles clients CMSG_REQUEST_PARTY_MEMBER_STATS request*/

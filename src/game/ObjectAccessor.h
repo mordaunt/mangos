@@ -120,6 +120,9 @@ class MANGOS_DLL_DECL ObjectAccessor : public MaNGOS::Singleton<ObjectAccessor, 
 
         void SaveAllPlayers();
 
+        // Pet access
+        static Pet* FindPet(ObjectGuid guid);               // if need pet at specific map better use Map::GetPet
+
         // Corpse access
         Corpse* GetCorpseForPlayerGUID(ObjectGuid guid);
         static Corpse* GetCorpseInMap(ObjectGuid guid, uint32 mapid);
@@ -136,14 +139,16 @@ class MANGOS_DLL_DECL ObjectAccessor : public MaNGOS::Singleton<ObjectAccessor, 
         void RemoveObject(Player *object) { HashMapHolder<Player>::Remove(object); }
 
         // TODO: This methods will need lock in MT environment
-        static void LinkMap(Map* map)   { i_mapList.push_back(map); }
-        static void DelinkMap(Map* map) { i_mapList.remove(map); }
+        static void LinkMap(Map* map)   { ACE_Guard<ACE_Thread_Mutex> guard(m_Lock); i_mapList.push_back(map); }
+        static void DelinkMap(Map* map) { ACE_Guard<ACE_Thread_Mutex> guard(m_Lock); i_mapList.remove(map); }
     private:
         // TODO: This methods will need lock in MT environment
         // Theoreticaly multiple threads can enter and search in this method but
         // in that case linking/delinking other map should be guarded
+        static ACE_Thread_Mutex  m_Lock;
         template <class OBJECT> static OBJECT* FindHelper(ObjectGuid guid)
         {
+            ACE_Guard<ACE_Thread_Mutex> guard(m_Lock);
             for (std::list<Map*>::const_iterator i = i_mapList.begin() ; i != i_mapList.end(); ++i)
             {
                 if (OBJECT* ret = (*i)->GetObjectsStore().find(guid.GetRawValue(), (OBJECT*)NULL))

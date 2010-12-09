@@ -247,7 +247,8 @@ Item::Item( )
 
 bool Item::Create( uint32 guidlow, uint32 itemid, Player const* owner)
 {
-    Object::_Create(guidlow, 0, HIGHGUID_ITEM);
+    Object::_Create(ObjectGuid(HIGHGUID_ITEM, guidlow));
+//    Object::_Create(guidlow, 0, HIGHGUID_ITEM);
 
     SetEntry(itemid);
     SetObjectScale(DEFAULT_OBJECT_SCALE);
@@ -280,7 +281,21 @@ void Item::UpdateDuration(Player* owner, uint32 diff)
 
     if (GetUInt32Value(ITEM_FIELD_DURATION)<=diff)
     {
+        uint32 itemId = this->GetEntry();
+
         owner->DestroyItem(GetBagSlot(), GetSlot(), true);
+
+        if (itemId == 39878) //Mysterious Egg
+        {
+            if (Item* Item = owner->StoreNewItemInInventorySlot(39883, 1))
+                owner->SendNewItem(Item, 1, true, false);
+        }
+
+        if (itemId == 44717) //Disgusting Jar
+        {
+            if (Item* Item = owner->StoreNewItemInInventorySlot(44718, 1))
+                owner->SendNewItem(Item, 1, true, false);
+        }
         return;
     }
 
@@ -381,7 +396,7 @@ bool Item::LoadFromDB(uint32 guidLow, Field *fields, ObjectGuid ownerGuid)
 {
     // create item before any checks for store correct guid
     // and allow use "FSetState(ITEM_REMOVED); SaveToDB();" for deleting item from DB
-    Object::_Create(guidLow, 0, HIGHGUID_ITEM);
+    Object::_Create(ObjectGuid(HIGHGUID_ITEM, guidLow));
 
     if (!LoadValues(fields[0].GetString()))
     {
@@ -787,6 +802,10 @@ bool Item::IsEquipped() const
 
 bool Item::CanBeTraded(bool mail) const
 {
+
+    if(!mail && IsBoundAccountWide()) // Dirty hack, because trade window is closing
+        return false;
+
     if ((!mail || !IsBoundAccountWide()) && IsSoulBound())
         return false;
 
@@ -832,6 +851,17 @@ bool Item::IsBoundByEnchant() const
 bool Item::IsFitToSpellRequirements(SpellEntry const* spellInfo) const
 {
     ItemPrototype const* proto = GetProto();
+
+    // Enchant spells only use Effect[0] (patch 3.3.2)
+    if(proto->IsVellum() && spellInfo->Effect[EFFECT_INDEX_0] == SPELL_EFFECT_ENCHANT_ITEM)
+    {
+        // EffectItemType[0] is the associated scroll itemID, if a scroll can be made
+        if(spellInfo->EffectItemType[EFFECT_INDEX_0] == 0)
+            return false;
+        // Other checks do not apply to vellum enchants, so return final result
+        return ((proto->SubClass == ITEM_SUBCLASS_WEAPON_ENCHANTMENT && spellInfo->EquippedItemClass == ITEM_CLASS_WEAPON) ||
+                (proto->SubClass == ITEM_SUBCLASS_ARMOR_ENCHANTMENT && spellInfo->EquippedItemClass == ITEM_CLASS_ARMOR));
+    }
 
     if (spellInfo->EquippedItemClass != -1)                 // -1 == any item class
     {
