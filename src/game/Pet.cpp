@@ -1156,7 +1156,7 @@ void Pet::_SaveSpells()
                 CharacterDatabase.PExecute("INSERT INTO pet_spell (guid,spell,active) VALUES ('%u', '%u', '%u')", m_charmInfo->GetPetNumber(), itr->first, itr->second.active);
                 break;
             case PETSPELL_NEW:
-                CharacterDatabase.PExecute("INSERT INTO pet_spell (guid,spell,active) VALUES ('%u', '%u', '%u')", m_charmInfo->GetPetNumber(), itr->first, itr->second.active);
+                CharacterDatabase.PExecute("REPLACE INTO pet_spell (guid,spell,active) VALUES ('%u', '%u', '%u')", m_charmInfo->GetPetNumber(), itr->first, itr->second.active);
                 break;
             case PETSPELL_UNCHANGED:
                 continue;
