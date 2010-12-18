@@ -221,6 +221,11 @@ Unit::Unit()
 
     m_Visibility = VISIBILITY_ON;
 
+    m_notify_sheduled = 0;
+    m_last_notified_position.x = 0;
+    m_last_notified_position.y = 0;
+    m_last_notified_position.z = 0;
+
     m_detectInvisibilityMask = 0;
     m_invisibilityMask = 0;
     m_transform = 0;
@@ -8595,12 +8600,9 @@ void Unit::SetVisibility(UnitVisibility x)
             }
         }
 
-        Map *m = GetMap();
-
-        if(GetTypeId()==TYPEID_PLAYER)
-            m->PlayerRelocation((Player*)this,GetPositionX(),GetPositionY(),GetPositionZ(),GetOrientation());
-        else
-            m->CreatureRelocation((Creature*)this,GetPositionX(),GetPositionY(),GetPositionZ(),GetOrientation());
+        GetViewPoint().Call_UpdateVisibilityForOwner();
+        UpdateObjectVisibility();
+        SheduleAINotify(0);
 
         GetViewPoint().Event_ViewPointVisibilityChanged();
     }
@@ -11857,6 +11859,94 @@ SpellAuraHolder* Unit::GetSpellAuraHolder (uint32 spellid, uint64 casterGUID)
             return iter->second;
 
     return NULL;
+}
+
+class RelocationNotifyEvent : public BasicEvent
+{
+    public:
+        RelocationNotifyEvent(Unit& owner) : BasicEvent(), m_owner(owner)
+        {
+            m_owner.m_notify_sheduled |= AI_Notify_Sheduled;
+        }
+
+        bool Execute(uint64 e_time, uint32 /*p_time*/)
+        {
+            float radius = MAX_CREATURE_ATTACK_RADIUS * sWorld.getConfig(CONFIG_FLOAT_RATE_CREATURE_AGGRO);
+
+            if (m_owner.m_notify_sheduled & AI_Notify_Execution)
+            {
+                if (m_owner.GetTypeId() == TYPEID_PLAYER)
+                {
+                    MaNGOS::PlayerRelocationNotifier notify((Player&)m_owner);
+                    Cell::VisitAllObjects(&m_owner,notify,radius);
+                } 
+                else //if(m_owner.GetTypeId() == TYPEID_UNIT)
+                {
+                    MaNGOS::CreatureRelocationNotifier notify((Creature&)m_owner);
+                    Cell::VisitAllObjects(&m_owner,notify,radius);
+                }
+
+                m_owner.m_notify_sheduled &= ~(AI_Notify_Sheduled | AI_Notify_Execution);
+                return true;
+            }
+            else
+            {
+                m_owner.m_notify_sheduled |= AI_Notify_Execution;
+                m_owner.m_Events.AddEvent(this, e_time + 1, false);
+                return false;
+            }
+        }
+
+        void Abort(uint64)
+        {
+            m_owner.m_notify_sheduled &= ~(AI_Notify_Sheduled | AI_Notify_Execution);
+        }
+
+    private:
+        Unit& m_owner;
+};
+
+class UpdateVisibilityEvent : public BasicEvent
+{
+    public:
+        UpdateVisibilityEvent(Unit& owner) : BasicEvent(), m_owner(owner)
+        {
+            m_owner.m_notify_sheduled |= Visibility_Update_Execution;
+        }
+
+        bool Execute(uint64, uint32)
+        {
+            m_owner.GetViewPoint().Call_UpdateVisibilityForOwner();
+            m_owner.UpdateObjectVisibility();
+            m_owner.m_notify_sheduled &= ~Visibility_Update_Execution;
+            return true;
+        }
+
+        void Abort(uint64)
+        {
+            m_owner.m_notify_sheduled &= ~Visibility_Update_Execution;
+        }
+
+    private:
+        Unit& m_owner;
+};
+
+void Unit::SheduleAINotify(uint32 delay)
+{
+    if (m_notify_sheduled & AI_Notify_Sheduled)
+        return;
+
+    RelocationNotifyEvent *notify = new RelocationNotifyEvent(*this);
+    m_Events.AddEvent(notify, m_Events.CalculateTime(delay));
+}
+
+void Unit::SheduleVisibilityUpdate()
+{
+    if (m_notify_sheduled & Visibility_Update_Execution)
+        return;
+
+    UpdateVisibilityEvent *notify = new UpdateVisibilityEvent(*this);
+    m_Events.AddEvent(notify, m_Events.CalculateTime(0));
 }
 
 void Unit::_AddAura(uint32 spellID, uint32 duration)
