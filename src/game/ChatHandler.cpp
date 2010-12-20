@@ -255,6 +255,12 @@ void WorldSession::HandleMessagechatOpcode( WorldPacket & recv_data )
             if ((type == CHAT_MSG_PARTY_LEADER) && !group->IsLeader(_player->GetObjectGuid()))
                 return;
 
+            // ChatSpy
+            GetPlayer()->HandleChatSpyMessage(msg, CHAT_MSG_PARTY, lang);
+            for(GroupReference *itr = group->GetFirstMember(); itr != NULL; itr = itr->next())
+                if(Player *pl = itr->getSource())
+                    pl->HandleChatSpyMessage(msg, CHAT_MSG_PARTY, lang, GetPlayer());
+
             WorldPacket data;
             ChatHandler::FillMessageData(&data, this, type, lang, NULL, 0, msg.c_str(), NULL);
             group->BroadcastPacket(&data, false, group->GetMemberGroup(GetPlayer()->GetObjectGuid()));
@@ -279,7 +285,10 @@ void WorldSession::HandleMessagechatOpcode( WorldPacket & recv_data )
 
             if (GetPlayer()->GetGuildId())
                 if (Guild *guild = sObjectMgr.GetGuildById(GetPlayer()->GetGuildId()))
+                {
                     guild->BroadcastToGuild(this, msg, lang == LANG_ADDON ? LANG_ADDON : LANG_UNIVERSAL);
+                    GetPlayer()->HandleChatSpyMessage(msg, CHAT_MSG_GUILD, lang);
+                }
         } break;
 
         case CHAT_MSG_OFFICER:
@@ -301,7 +310,10 @@ void WorldSession::HandleMessagechatOpcode( WorldPacket & recv_data )
 
             if (GetPlayer()->GetGuildId())
                 if (Guild *guild = sObjectMgr.GetGuildById(GetPlayer()->GetGuildId()))
+                {
                     guild->BroadcastToOfficers(this, msg, lang == LANG_ADDON ? LANG_ADDON : LANG_UNIVERSAL);
+                    GetPlayer()->HandleChatSpyMessage(msg, CHAT_MSG_OFFICER, lang);
+                }
         } break;
 
         case CHAT_MSG_RAID:
@@ -329,6 +341,12 @@ void WorldSession::HandleMessagechatOpcode( WorldPacket & recv_data )
                 if(!group || group->isBGGroup() || !group->isRaidGroup())
                     return;
             }
+
+            // ChatSpy
+            GetPlayer()->HandleChatSpyMessage(msg, CHAT_MSG_RAID, lang);
+            for(GroupReference *itr = group->GetFirstMember(); itr != NULL; itr = itr->next())
+                if(Player *pl = itr->getSource())
+                    pl->HandleChatSpyMessage(msg, CHAT_MSG_RAID, lang, GetPlayer());
 
             WorldPacket data;
             ChatHandler::FillMessageData(&data, this, CHAT_MSG_RAID, lang, "", 0, msg.c_str(), NULL);
@@ -360,6 +378,12 @@ void WorldSession::HandleMessagechatOpcode( WorldPacket & recv_data )
                     return;
             }
 
+            // ChatSpy
+            GetPlayer()->HandleChatSpyMessage(msg, CHAT_MSG_RAID_LEADER, lang);
+            for(GroupReference *itr = group->GetFirstMember(); itr != NULL; itr = itr->next())
+                if(Player *pl = itr->getSource())
+                pl->HandleChatSpyMessage(msg, CHAT_MSG_RAID_LEADER, lang, GetPlayer());
+
             WorldPacket data;
             ChatHandler::FillMessageData(&data, this, CHAT_MSG_RAID_LEADER, lang, "", 0, msg.c_str(), NULL);
             group->BroadcastPacket(&data, false);
@@ -380,6 +404,12 @@ void WorldSession::HandleMessagechatOpcode( WorldPacket & recv_data )
             if (!group || !group->isRaidGroup() ||
                 !(group->IsLeader(GetPlayer()->GetObjectGuid()) || group->IsAssistant(GetPlayer()->GetObjectGuid())))
                 return;
+
+            // ChatSpy
+            GetPlayer()->HandleChatSpyMessage(msg, CHAT_MSG_RAID_WARNING, lang);
+            for(GroupReference *itr = group->GetFirstMember(); itr != NULL; itr = itr->next())
+                if(Player *pl = itr->getSource())
+                pl->HandleChatSpyMessage(msg, CHAT_MSG_RAID_WARNING, lang, GetPlayer());
 
             WorldPacket data;
             //in battleground, raid warning is sent only to players in battleground - code is ok
@@ -403,6 +433,12 @@ void WorldSession::HandleMessagechatOpcode( WorldPacket & recv_data )
             if(!group || !group->isBGGroup())
                 return;
 
+            // ChatSpy
+            GetPlayer()->HandleChatSpyMessage(msg, CHAT_MSG_BATTLEGROUND, lang);
+            for(GroupReference *itr = group->GetFirstMember(); itr != NULL; itr = itr->next())
+                if(Player *pl = itr->getSource())
+                    pl->HandleChatSpyMessage(msg, CHAT_MSG_BATTLEGROUND, lang, GetPlayer());
+
             WorldPacket data;
             ChatHandler::FillMessageData(&data, this, CHAT_MSG_BATTLEGROUND, lang, "", 0, msg.c_str(), NULL);
             group->BroadcastPacket(&data, false);
@@ -424,6 +460,12 @@ void WorldSession::HandleMessagechatOpcode( WorldPacket & recv_data )
             if (!group || !group->isBGGroup() || !group->IsLeader(GetPlayer()->GetObjectGuid()))
                 return;
 
+            // ChatSpy
+            GetPlayer()->HandleChatSpyMessage(msg, CHAT_MSG_BATTLEGROUND_LEADER, lang);
+            for(GroupReference *itr = group->GetFirstMember(); itr != NULL; itr = itr->next())
+                if(Player *pl = itr->getSource())
+                    pl->HandleChatSpyMessage(msg, CHAT_MSG_BATTLEGROUND_LEADER, lang, GetPlayer());
+
             WorldPacket data;
             ChatHandler::FillMessageData(&data, this, CHAT_MSG_BATTLEGROUND_LEADER, lang, "", 0, msg.c_str(), NULL);
             group->BroadcastPacket(&data, false);
@@ -443,7 +485,10 @@ void WorldSession::HandleMessagechatOpcode( WorldPacket & recv_data )
 
             if(ChannelMgr* cMgr = channelMgr(_player->GetTeam()))
                 if(Channel *chn = cMgr->GetChannel(channel, _player))
+                {
                     chn->Say(_player->GetGUID(), msg.c_str(), lang);
+                    GetPlayer()->HandleChatSpyMessage(msg, CHAT_MSG_CHANNEL, lang, NULL, channel);
+                }
         } break;
 
         case CHAT_MSG_AFK:
