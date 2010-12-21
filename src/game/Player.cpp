@@ -22743,6 +22743,9 @@ void Player::ActivateSpec(uint8 specNum)
     if(specNum >= GetSpecsCount())
         return;
 
+    if(GetBattleGround() && GetBattleGround()->GetStatus() == STATUS_IN_PROGRESS)
+        return;
+
     if (getClass() == CLASS_HUNTER || getClass() == CLASS_WARLOCK)
         UnsummonPetTemporaryIfAny();
     else if (Pet* pet = GetPet())
