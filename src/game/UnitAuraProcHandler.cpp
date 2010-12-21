@@ -2382,151 +2382,33 @@ SpellAuraProcResult Unit::HandleDummyAuraProc(Unit *pVictim, uint32 damage, Aura
 
                     break;
                 }
-                // Heartpierce (Item - Icecrown 25 Normal Dagger Proc)
-                // ===================================================
-                // 71881 - Restores 120 mana for 10 sec.      - Priest, Shaman, Paladin, Warlock, Hunter, Mage, Druid in human, moonkin, aqua, travel and in tree form.
-                // 71882 - Restores 4 energy for 10 sec.      - Rogue, Druid in cat form.
-                // 71883 - Restores 2 rage for 10 sec.        - Warrior, Druid in bear form.
-                // 71884 - Restores 8 runic power for 10 sec. - Death Knight
+                // Heartpierce, Item - Icecrown 25 Normal Dagger Proc
                 case 71880:
                 {
                     if(GetTypeId() != TYPEID_PLAYER)
                         return SPELL_AURA_PROC_FAILED;
 
-                    // Select class defined buff
-                    switch (getClass())
+                    switch (this->getPowerType())
                     {
-                        case CLASS_DRUID:
-                        {
-                            switch(GetShapeshiftForm())
-                            {
-                                case FORM_CAT:
-                                {
-                                    triggered_spell_id = 71882;
-                                    break;
-                                }
-                                case FORM_BEAR:
-                                case FORM_DIREBEAR:
-                                {
-                                    triggered_spell_id = 71883;
-                                    break;
-                                }
-                                case FORM_MOONKIN:
-                                case FORM_TRAVEL:
-                                case FORM_TREE:
-                                case FORM_AQUA:
-                                case FORM_FLIGHT:
-                                case FORM_FLIGHT_EPIC:
-                                case FORM_NONE:
-                                {
-                                    triggered_spell_id = 71881;
-                                    break;
-                                }
-                                default:
-                                    return SPELL_AURA_PROC_FAILED;
-                            }
-                            break;
-                        }
-                        case CLASS_ROGUE:
-                        {
-                            triggered_spell_id = 71882;
-                            break;
-                        }
-                        case CLASS_WARRIOR:
-                        {
-                            triggered_spell_id = 71883;
-                            break;
-                        }
-                        case CLASS_PRIEST:
-                        case CLASS_SHAMAN:
-                        case CLASS_MAGE:
-                        case CLASS_WARLOCK:
-                        case CLASS_PALADIN:
-                        case CLASS_HUNTER:
-                        {
-                            triggered_spell_id = 71881;
-                            break;
-                        }
-                        case CLASS_DEATH_KNIGHT:
-                        {
-                            triggered_spell_id = 71884;
-                            break;
-                        }
+                        case POWER_ENERGY: triggered_spell_id = 71882; break;
+                        case POWER_RAGE:   triggered_spell_id = 71883; break;
+                        case POWER_MANA:   triggered_spell_id = 71881; break;
                         default:
                             return SPELL_AURA_PROC_FAILED;
                     }
                     break;
                 }
-                // Heartpierce (Item - Icecrown 25 Heroic Dagger Proc)
-                // ===================================================
-                // 71888 - Restores 120 mana for 12 sec.      - Priest, Shaman, Paladin, Warlock, Hunter, Mage, Druid in human, moonkin, aqua, travel and in tree form.
-                // 71887 - Restores 4 energy for 12 sec.      - Rogue, Druid in cat form.
-                // 71886 - Restores 2 rage for 12 sec.        - Warrior, Druid in bear form.
-                // 71885 - Restores 8 runic power for 12 sec. - Death Knigh
+                // Heartpierce, Item - Icecrown 25 Heroic Dagger Proc
                 case 71892:
                 {
                     if(GetTypeId() != TYPEID_PLAYER)
                         return SPELL_AURA_PROC_FAILED;
 
-                    // Select class defined buff
-                    switch (getClass())
+                    switch (this->getPowerType())
                     {
-                        case CLASS_DRUID:
-                        {
-                            switch(GetShapeshiftForm())
-                            {
-                                case FORM_CAT:
-                                {
-                                    triggered_spell_id = 71887;
-                                    break;
-                                }
-                                case FORM_BEAR:
-                                case FORM_DIREBEAR:
-                                {
-                                    triggered_spell_id = 71886;
-                                    break;
-                                }
-                                case FORM_MOONKIN:
-                                case FORM_TRAVEL:
-                                case FORM_TREE:
-                                case FORM_AQUA:
-                                case FORM_FLIGHT:
-                                case FORM_FLIGHT_EPIC:
-                                case FORM_NONE:
-                                {
-                                    triggered_spell_id = 71888;
-                                    break;
-                                }
-                                default:
-                                    return SPELL_AURA_PROC_FAILED;
-                            }
-                            break;
-                        }
-                        case CLASS_ROGUE:
-                        {
-                            triggered_spell_id = 71887;
-                            break;
-                        }
-                        case CLASS_WARRIOR:
-                        {
-                            triggered_spell_id = 71886;
-                            break;
-                        }
-                        case CLASS_PRIEST:
-                        case CLASS_SHAMAN:
-                        case CLASS_MAGE:
-                        case CLASS_WARLOCK:
-                        case CLASS_PALADIN:
-                        case CLASS_HUNTER:
-                        {
-                            triggered_spell_id = 71888;
-                            break;
-                        }
-                        case CLASS_DEATH_KNIGHT:
-                        {
-                            triggered_spell_id = 71885;
-                            break;
-                        }
+                        case POWER_ENERGY: triggered_spell_id = 71887; break;
+                        case POWER_RAGE:   triggered_spell_id = 71886; break;
+                        case POWER_MANA:   triggered_spell_id = 71888; break;
                         default:
                             return SPELL_AURA_PROC_FAILED;
                     }
@@ -3292,13 +3174,13 @@ SpellAuraProcResult Unit::HandleDummyAuraProc(Unit *pVictim, uint32 damage, Aura
         return SPELL_AURA_PROC_FAILED;
 
     if (basepoints[EFFECT_INDEX_0] || basepoints[EFFECT_INDEX_1] || basepoints[EFFECT_INDEX_2])
-        CastCustomSpell(target, triggered_spell_id,
+        CastCustomSpell(target, triggerEntry,
             basepoints[EFFECT_INDEX_0] ? &basepoints[EFFECT_INDEX_0] : NULL,
             basepoints[EFFECT_INDEX_1] ? &basepoints[EFFECT_INDEX_1] : NULL,
             basepoints[EFFECT_INDEX_2] ? &basepoints[EFFECT_INDEX_2] : NULL,
             true, castItem, triggeredByAura);
     else
-        CastSpell(target, triggered_spell_id, true, castItem, triggeredByAura);
+        CastSpell(target, triggerEntry, true, castItem, triggeredByAura);
 
     if (cooldown && GetTypeId()==TYPEID_PLAYER)
         ((Player*)this)->AddSpellCooldown(triggered_spell_id,0,time(NULL) + cooldown);
@@ -3437,6 +3319,11 @@ SpellAuraProcResult Unit::HandleProcTriggerSpellAuraProc(Unit *pVictim, uint32 d
                 //case 54072: break;                        // Knockback Ball Passive
                 //case 54476: break;                        // Blood Presence
                 //case 54775: break;                        // Abandon Vehicle on Poly
+                case 56702:                                 //
+                {
+                    trigger_spell_id = 56701;
+                    break;
+                }
                 case 57345:                                 // Darkmoon Card: Greatness
                 {
                     float stat = 0.0f;
