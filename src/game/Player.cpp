@@ -4531,7 +4531,8 @@ void Player::BuildPlayerRepop()
     GetMap()->Add(corpse);
 
     // convert player body to ghost
-    SetHealth( 1 );
+    if (getDeathState() != GHOULED)
+        SetHealth( 1 );
 
     SetMovement(MOVE_WATER_WALK);
     if(!GetSession()->isLogingOut())
@@ -4540,7 +4541,8 @@ void Player::BuildPlayerRepop()
     // BG - remove insignia related
     RemoveFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_SKINNABLE);
 
-    SendCorpseReclaimDelay();
+    if (getDeathState() != GHOULED)
+        SendCorpseReclaimDelay();
 
     // to prevent cheating
     corpse->ResetGhostTime();
