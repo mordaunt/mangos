@@ -4937,6 +4937,10 @@ void Spell::DoSummonWild(SpellEffectIndex eff_idx, uint32 forceFaction)
 
     int32 amount = damage > 0 ? damage : 1;
 
+    // in DBC in this case is lvl so limit it by one summon
+    if (amount > 10)
+        amount = 1;
+
     for(int32 count = 0; count < amount; ++count)
     {
         float px, py, pz;
