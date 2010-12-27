@@ -2159,8 +2159,8 @@ void Aura::HandleAuraDummy(bool apply, bool Real)
                     case 75614:                             // Celestial Steed
                         Spell::SelectMountByAreaAndSkill(target, 75619, 75620, 75617, 75618, 76153);
                         return;
-                    case 75973:                             // X-53 Touring Rocket 
-                        Spell::SelectMountByAreaAndSkill(target, 0, 75957, 75972, 76154, 0);
+                    case 75973:                             // X-53 Touring Rocket
+                        Spell::SelectMountByAreaAndSkill(target, 0, 0, 75957, 75972, 76154);
                         return;
                 }
                 break;
@@ -4103,7 +4103,10 @@ void Aura::HandleAuraModDisarm(bool apply, bool Real)
         return;
 
     if (apply)
+    {
+        target->RemoveAurasDueToSpell(46924); // Disarm should stop bladestorm
         target->SetAttackTime(BASE_ATTACK,BASE_ATTACK_TIME);
+    }
     else
         ((Player *)target)->SetRegularAttackTime();
 
@@ -6498,7 +6501,7 @@ void Aura::HandleAuraUntrackable(bool apply, bool /*Real*/)
 
 void Aura::HandleAuraModPacify(bool apply, bool /*Real*/)
 {
-    if(apply)
+    if (apply)
         GetTarget()->SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_PACIFIED);
     else
         GetTarget()->RemoveFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_PACIFIED);
@@ -7924,7 +7927,7 @@ void Aura::PeriodicDummyTick()
             if (spell->Id == 52179)
             {
                 // Periodic need for remove visual on stun/fear/silence lost
-                if (!(target->GetUInt32Value(UNIT_FIELD_FLAGS)&(UNIT_FLAG_STUNNED|UNIT_FLAG_FLEEING|UNIT_FLAG_SILENCED)))
+                if (!target->HasFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_STUNNED | UNIT_FLAG_FLEEING | UNIT_FLAG_SILENCED))
                     target->RemoveAurasDueToSpell(52179);
                 return;
             }
@@ -8902,6 +8905,18 @@ void SpellAuraHolder::HandleSpellSpecificBoosts(bool apply)
                         return;
                     break;
                 }
+                case 70867:                                 // Soul of Blood Qween
+                case 70879:
+                case 71473:
+                case 71525:
+                case 71530:
+                case 71531:
+                case 71532:
+                case 71533:
+                {
+                    spellId1 = 70871;
+                    break;
+                }
                 case 71905:                                 // Soul Fragment
                 {
                     if (!apply)
@@ -9341,17 +9356,18 @@ void SpellAuraHolder::HandleSpellSpecificBoosts(bool apply)
                 case 46619:                                 // Raise ally
                 {
                     if (!m_target || m_target->GetTypeId() != TYPEID_PLAYER)
-                        break;
+                        return;
                     Player* m_player = (Player*)m_target;
                     if (apply)
                     {
                         // convert player to ghoul
                         m_player->SetDeathState(GHOULED);
-                        m_player->BuildPlayerRepop();
-                        m_player->SpawnCorpseBones();
+                        m_player->SetHealth(1);
+                        m_player->SetMovement(MOVE_ROOT);
                     }
                     else
                     {
+                        m_player->SetMovement(MOVE_UNROOT);
                         m_player->SetHealth(0);
                         m_player->SetDeathState(JUST_DIED);
                     }
