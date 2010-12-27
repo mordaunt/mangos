@@ -122,10 +122,16 @@ void BattleGroundEY::AddPoints(Team team, uint32 Points)
     BattleGroundTeamIndex team_index = GetTeamIndexByTeamId(team);
     m_TeamScores[team_index] += Points;
     m_HonorScoreTics[team_index] += Points;
+    m_ExperienceTics[team_index] += Points;
     if (m_HonorScoreTics[team_index] >= m_HonorTics )
     {
         RewardHonorToTeam(GetBonusHonorFromKill(1), team);
         m_HonorScoreTics[team_index] -= m_HonorTics;
+    }
+    if (m_ExperienceTics[team_index] >= BG_EY_ExperienceTicks )
+    {
+        RewardXpToTeam(0, 0.8f, team);
+        m_ExperienceTics[team_index] -= m_HonorTics;
     }
     UpdateTeamScore(team);
 }
@@ -267,12 +273,20 @@ void BattleGroundEY::EndBattleGround(Team winner)
 {
     //win reward
     if (winner == ALLIANCE)
+    {
         RewardHonorToTeam(GetBonusHonorFromKill(1), ALLIANCE);
+        RewardXpToTeam(0, 0.8f, winner);
+    }
     if (winner == HORDE)
+    {
         RewardHonorToTeam(GetBonusHonorFromKill(1), HORDE);
+        RewardXpToTeam(0, 0.8f, winner);
+    }
     //complete map reward
     RewardHonorToTeam(GetBonusHonorFromKill(1), ALLIANCE);
     RewardHonorToTeam(GetBonusHonorFromKill(1), HORDE);
+    RewardXpToTeam(0, 0.8f, ALLIANCE);
+    RewardXpToTeam(0, 0.8f, HORDE);
 
     BattleGround::EndBattleGround(winner);
 }
@@ -422,6 +436,8 @@ void BattleGroundEY::Reset()
     m_TeamPointsCount[BG_TEAM_HORDE] = 0;
     m_HonorScoreTics[BG_TEAM_ALLIANCE] = 0;
     m_HonorScoreTics[BG_TEAM_HORDE] = 0;
+    m_ExperienceTics[BG_TEAM_ALLIANCE] = 0;
+    m_ExperienceTics[BG_TEAM_HORDE] = 0;
     m_FlagState = BG_EY_FLAG_STATE_ON_BASE;
     m_FlagKeeper.Clear();
     m_DroppedFlagGuid.Clear();
@@ -645,6 +661,8 @@ void BattleGroundEY::EventPlayerCapturedFlag(Player *Source, BG_EY_Nodes node)
 
     if (m_TeamPointsCount[team_id] > 0)
         AddPoints(Source->GetTeam(), BG_EY_FlagPoints[m_TeamPointsCount[team_id] - 1]);
+
+    RewardXpToTeam(0, 0.6f, Source->GetTeam());
 
     UpdatePlayerScore(Source, SCORE_FLAG_CAPTURES, 1);
 }
