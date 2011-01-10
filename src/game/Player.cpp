@@ -589,8 +589,6 @@ Player::Player (WorldSession *session): Unit(), m_mover(this), m_camera(this), m
 
     // Refer-A-Friend
     m_GrantableLevelsCount = 0;
-
-    m_anticheat = new AntiCheat(this);
 }
 
 Player::~Player ()
