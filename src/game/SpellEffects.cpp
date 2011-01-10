@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2005-2010 MaNGOS <http://getmangos.com/>
+ * Copyright (C) 2005-2011 MaNGOS <http://getmangos.com/>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -51,7 +51,6 @@
 #include "VMapFactory.h"
 #include "Util.h"
 #include "TemporarySummon.h"
-#include "ScriptCalls.h"
 #include "ScriptMgr.h"
 #include "SkillDiscovery.h"
 #include "Formulas.h"
@@ -213,7 +212,7 @@ pEffect SpellEffects[TOTAL_SPELL_EFFECTS]=
     &Spell::EffectCharge2,                                  //149 SPELL_EFFECT_CHARGE2                  swoop
     &Spell::EffectQuestStart,                               //150 SPELL_EFFECT_QUEST_START
     &Spell::EffectTriggerRitualOfSummoning,                 //151 SPELL_EFFECT_TRIGGER_SPELL_2
-    &Spell::EffectNULL,                                     //152 SPELL_EFFECT_152                      summon Refer-a-Friend
+    &Spell::EffectFriendSummon,                             //152 SPELL_EFFECT_FRIEND_SUMMON    summon Refer-a-Friend
     &Spell::EffectNULL,                                     //153 SPELL_EFFECT_CREATE_PET               misc value is creature entry
     &Spell::EffectTeachTaxiNode,                            //154 SPELL_EFFECT_TEACH_TAXI_NODE          single spell: Teach River's Heart Taxi Path
     &Spell::EffectTitanGrip,                                //155 SPELL_EFFECT_TITAN_GRIP Allows you to equip two-handed axes, maces and swords in one hand, but you attack $49152s1% slower than normal.
@@ -641,7 +640,7 @@ void Spell::EffectSchoolDMG(SpellEffectIndex effect_idx)
                     // converts up to 30 points of energy into ($f1+$AP/410) additional damage
                     float ap = m_caster->GetTotalAttackPowerValue(BASE_ATTACK);
                     float multiple = ap / 410 + m_spellInfo->DmgMultiplier[effect_idx];
-                    damage += int32(((Player*)m_caster)->GetComboPoints() * ap * 7 / 100);
+                    damage += int32(m_caster->GetComboPoints() * ap * 7 / 100);
                     uint32 energy = m_caster->GetPower(POWER_ENERGY);
                     uint32 used_energy = energy > 30 ? 30 : energy;
                     damage += int32(used_energy * multiple);
@@ -666,7 +665,7 @@ void Spell::EffectSchoolDMG(SpellEffectIndex effect_idx)
                 if (m_caster->GetTypeId()==TYPEID_PLAYER && (m_spellInfo->SpellFamilyFlags & UI64LIT(0x800000000)))
                 {
                     // consume from stack dozes not more that have combo-points
-                    if(uint32 combo = ((Player*)m_caster)->GetComboPoints())
+                    if(uint32 combo = m_caster->GetComboPoints())
                     {
                         Aura *poison = 0;
                         // Lookup for Deadly poison (only attacker applied)
@@ -710,13 +709,13 @@ void Spell::EffectSchoolDMG(SpellEffectIndex effect_idx)
                         }
                         // Eviscerate and Envenom Bonus Damage (item set effect)
                         if (m_caster->GetDummyAura(37169))
-                            damage += ((Player*)m_caster)->GetComboPoints()*40;
+                            damage += m_caster->GetComboPoints()*40;
                     }
                 }
                 // Eviscerate
                 else if ((m_spellInfo->SpellFamilyFlags & UI64LIT(0x00020000)) && m_caster->GetTypeId()==TYPEID_PLAYER)
                 {
-                    if(uint32 combo = ((Player*)m_caster)->GetComboPoints())
+                    if(uint32 combo = m_caster->GetComboPoints())
                     {
                         float ap = m_caster->GetTotalAttackPowerValue(BASE_ATTACK);
                         damage += irand(int32(ap * combo * 0.03f), int32(ap * combo * 0.07f));
@@ -1052,6 +1051,46 @@ void Spell::EffectDummy(SpellEffectIndex eff_idx)
                     m_caster->CastSpell(m_caster, spell_id, true, NULL);
                     return;
                 }
+                case 19411:                                 // Lava Bomb
+                case 20474:                                 // Lava Bomb
+                {
+                    if (!unitTarget)
+                        return;
+
+                    // Hack alert!
+                    // This dummy are expected to cast spell 20494 to summon GO entry 177704
+                    // Spell does not exist client side, so we have to make a hack, creating the GO (SPELL_EFFECT_SUMMON_OBJECT_WILD)
+                    // Spell should appear in both SMSG_SPELL_START/GO and SMSG_SPELLLOGEXECUTE
+
+                    // For later, creating custom spell
+                    // _START: packguid: target, cast flags: 0xB, TARGET_FLAG_SELF
+                    // _GO: packGuid: target, cast flags: 0x4309, TARGET_FLAG_DEST_LOCATION
+                    // LOG: spell: 20494, effect, pguid: goguid
+
+                    GameObject* pGameObj = new GameObject;
+
+                    Map *map = unitTarget->GetMap();
+
+                    if (!pGameObj->Create(sObjectMgr.GenerateLowGuid(HIGHGUID_GAMEOBJECT), 177704,
+                        map, m_caster->GetPhaseMask(),
+                        unitTarget->GetPositionX(), unitTarget->GetPositionY(), unitTarget->GetPositionZ(),
+                        unitTarget->GetOrientation(), 0.0f, 0.0f, 0.0f, 0.0f, GO_ANIMPROGRESS_DEFAULT, GO_STATE_READY))
+                    {
+                        delete pGameObj;
+                        return;
+                    }
+
+                    DEBUG_LOG("Gameobject, create custom in SpellEffects.cpp EffectDummy");
+
+                    // Expect created without owner, but with level from _template
+                    pGameObj->SetRespawnTime(MINUTE/2);
+                    pGameObj->SetUInt32Value(GAMEOBJECT_LEVEL, pGameObj->GetGOInfo()->trap.level);
+                    pGameObj->SetSpellId(m_spellInfo->Id);
+
+                    map->Add(pGameObj);
+
+                    return;
+                }
                 case 20577:                                 // Cannibalize
                 {
                     if (unitTarget)
@@ -1123,6 +1162,18 @@ void Spell::EffectDummy(SpellEffectIndex eff_idx)
                         return;
 
                     m_caster->CastSpell(m_caster, 13166, true, m_CastItem);
+                    return;
+                }
+                case 23138:                                 // Gate of Shazzrah
+                {
+                    if (!unitTarget)
+                        return;
+
+                    // Effect probably include a threat change, but it is unclear if fully
+                    // reset or just forced upon target for teleport (SMSG_HIGHEST_THREAT_UPDATE)
+
+                    // Gate of Shazzrah
+                    m_caster->CastSpell(unitTarget, 23139, true);
                     return;
                 }
                 case 23448:                                 // Transporter Arrival - Ultrasafe Transporter: Gadgetzan - backfires
@@ -1290,6 +1341,14 @@ void Spell::EffectDummy(SpellEffectIndex eff_idx)
 
                     int32 basepoints0 = 100;
                     m_caster->CastCustomSpell(unitTarget, 37675, &basepoints0, NULL, NULL, true);
+                    return;
+                }
+                case 38194:                                 // Blink
+                {
+                    // Blink
+                    if (unitTarget)
+                        m_caster->CastSpell(unitTarget, 38203, true);
+
                     return;
                 }
                 case 40802:                                 // Mingo's Fortune Generator (Mingo's Fortune Giblets)
@@ -1867,7 +1926,7 @@ void Spell::EffectDummy(SpellEffectIndex eff_idx)
                         }
                         case EFFECT_INDEX_1:                // additional data for dummy[0]
                         case EFFECT_INDEX_2:
-                            return;                         
+                            return;
                     }
                     return;
                 }
@@ -2083,6 +2142,14 @@ void Spell::EffectDummy(SpellEffectIndex eff_idx)
                 {
                     ((Player*)m_caster)->RemoveSpellCooldown(53385, true);
                     return;
+                }
+                case 71390:                                 // Pact of darkfallen
+                {
+                    if (!unitTarget)
+                        return;
+
+                    unitTarget->CastSpell(unitTarget, 71341, true);
+                    break;
                 }
                 case 72202:                                 // Blade power
                 {
@@ -2908,11 +2975,11 @@ void Spell::EffectDummy(SpellEffectIndex eff_idx)
     // Script based implementation. Must be used only for not good for implementation in core spell effects
     // So called only for not processed cases
     if (gameObjTarget)
-        Script->EffectDummyGameObj(m_caster, m_spellInfo->Id, eff_idx, gameObjTarget);
-    else if (unitTarget && unitTarget->GetTypeId()==TYPEID_UNIT)
-        Script->EffectDummyCreature(m_caster, m_spellInfo->Id, eff_idx, (Creature*)unitTarget);
+        sScriptMgr.OnEffectDummy(m_caster, m_spellInfo->Id, eff_idx, gameObjTarget);
+    else if (unitTarget && unitTarget->GetTypeId() == TYPEID_UNIT)
+        sScriptMgr.OnEffectDummy(m_caster, m_spellInfo->Id, eff_idx, (Creature*)unitTarget);
     else if (itemTarget)
-        Script->EffectDummyItem(m_caster, m_spellInfo->Id, eff_idx, itemTarget);
+        sScriptMgr.OnEffectDummy(m_caster, m_spellInfo->Id, eff_idx, itemTarget);
 }
 
 void Spell::EffectTriggerSpellWithValue(SpellEffectIndex eff_idx)
@@ -3039,28 +3106,12 @@ void Spell::EffectTriggerSpell(SpellEffectIndex effIndex)
             return;
         // Brittle Armor - (need add max stack of 24575 Brittle Armor)
         case 29284:
-        {
-            // Brittle Armor
-            SpellEntry const* spell = sSpellStore.LookupEntry(24575);
-            if (!spell)
-                return;
-
-            for (uint32 j=0; j < spell->StackAmount; ++j)
-                m_caster->CastSpell(unitTarget, spell->Id, true, m_CastItem, NULL, m_originalCasterGUID);
+            m_caster->CastSpell(unitTarget, 24575, true, m_CastItem, NULL, m_originalCasterGUID);
             return;
-        }
         // Mercurial Shield - (need add max stack of 26464 Mercurial Shield)
         case 29286:
-        {
-            // Mercurial Shield
-            SpellEntry const* spell = sSpellStore.LookupEntry(26464);
-            if (!spell)
-                return;
-
-            for (uint32 j=0; j < spell->StackAmount; ++j)
-                m_caster->CastSpell(unitTarget, spell->Id, true, m_CastItem, NULL, m_originalCasterGUID);
+            m_caster->CastSpell(unitTarget, 26464, true, m_CastItem, NULL, m_originalCasterGUID);
             return;
-        }
         // Righteous Defense
         case 31980:
         {
@@ -3548,9 +3599,8 @@ void Spell::EffectSendEvent(SpellEffectIndex effectIndex)
     */
     DEBUG_FILTER_LOG(LOG_FILTER_SPELL_CAST, "Spell ScriptStart %u for spellid %u in EffectSendEvent ", m_spellInfo->EffectMiscValue[effectIndex], m_spellInfo->Id);
 
-    if (!Script->ProcessEventId(m_spellInfo->EffectMiscValue[effectIndex], m_caster, focusObject, true))
-        if (m_caster->IsInWorld())
-            m_caster->GetMap()->ScriptsStart(sEventScripts, m_spellInfo->EffectMiscValue[effectIndex], m_caster, focusObject);
+    if (!sScriptMgr.OnProcessEvent(m_spellInfo->EffectMiscValue[effectIndex], m_caster, focusObject, true))
+        m_caster->GetMap()->ScriptsStart(sEventScripts, m_spellInfo->EffectMiscValue[effectIndex], m_caster, focusObject);
 }
 
 void Spell::EffectPowerBurn(SpellEffectIndex eff_idx)
@@ -3721,7 +3771,7 @@ void Spell::EffectHealPct(SpellEffectIndex /*eff_idx*/)
         unitTarget->CalculateHealAbsorb(addhealth, &absorb);
 
         int32 gain = caster->DealHeal(unitTarget, addhealth - absorb, m_spellInfo, false, absorb);
-        unitTarget->getHostileRefManager().threatAssist(m_caster, float(gain) * 0.5f, m_spellInfo);
+        unitTarget->getHostileRefManager().threatAssist(caster, float(gain) * 0.5f, m_spellInfo);
     }
 }
 
@@ -4377,7 +4427,7 @@ void Spell::EffectSummonType(SpellEffectIndex eff_idx)
                         else
                         {
                             // possible sort totems/guardians only by summon creature type
-                            CreatureInfo const* cInfo = sObjectMgr.GetCreatureTemplate(m_spellInfo->EffectMiscValue[eff_idx]);
+                            CreatureInfo const* cInfo = ObjectMgr::GetCreatureTemplate(m_spellInfo->EffectMiscValue[eff_idx]);
 
                             if (!cInfo)
                                 return;
@@ -4633,7 +4683,7 @@ void Spell::EffectSummonPossessed(SpellEffectIndex eff_idx)
     {
         summon->SetLevel(m_caster->getLevel());
 
-        if(CreatureAI* scriptedAI = Script->GetAI(summon))
+        if(CreatureAI* scriptedAI = sScriptMgr.GetCreatureAI(summon))
         {
             // Prevent from ScriptedAI reinitialized
             summon->LockAI(true);
@@ -5980,13 +6030,13 @@ void Spell::EffectWeaponDmg(SpellEffectIndex eff_idx)
     if (m_spellInfo->SpellFamilyName==SPELLFAMILY_ROGUE && (m_spellInfo->SpellFamilyFlags & UI64LIT(0x2000000)))
     {
         if(m_caster->GetTypeId()==TYPEID_PLAYER)
-            ((Player*)m_caster)->AddComboPoints(unitTarget, 1);
+            m_caster->AddComboPoints(unitTarget, 1);
     }
     // Mangle (Cat): CP
     else if (m_spellInfo->SpellFamilyName==SPELLFAMILY_DRUID && (m_spellInfo->SpellFamilyFlags==UI64LIT(0x0000040000000000)))
     {
         if(m_caster->GetTypeId()==TYPEID_PLAYER)
-            ((Player*)m_caster)->AddComboPoints(unitTarget, 1);
+            m_caster->AddComboPoints(unitTarget, 1);
     }
 
     // take ammo
@@ -7711,13 +7761,10 @@ void Spell::EffectAddComboPoints(SpellEffectIndex /*eff_idx*/)
     if(!unitTarget)
         return;
 
-    if(m_caster->GetTypeId() != TYPEID_PLAYER)
-        return;
-
     if(damage <= 0)
         return;
 
-    ((Player*)m_caster)->AddComboPoints(unitTarget, damage);
+    m_caster->AddComboPoints(unitTarget, damage);
 }
 
 void Spell::EffectDuel(SpellEffectIndex eff_idx)
@@ -8353,7 +8400,7 @@ void Spell::EffectReputation(SpellEffectIndex eff_idx)
 
 void Spell::EffectQuestComplete(SpellEffectIndex eff_idx)
 {
-    if (unitTarget->GetTypeId() != TYPEID_PLAYER)
+    if (!unitTarget || unitTarget->GetTypeId() != TYPEID_PLAYER)
         return;
 
     uint32 quest_id = m_spellInfo->EffectMiscValue[eff_idx];
@@ -9292,4 +9339,20 @@ void Spell::EffectWMOChange(SpellEffectIndex eff_idx)
     else
         DEBUG_LOG( "Spell::EffectWMORepair called, but no valid targets. Spell ID %u", m_spellInfo->Id);
 
+}
+
+void Spell::EffectFriendSummon( SpellEffectIndex eff_idx )
+{
+    if (m_caster->GetTypeId() != TYPEID_PLAYER)
+        return;
+
+    if (((Player*)m_caster)->GetSelectionGuid().IsEmpty() || !((Player*)m_caster)->GetSelectionGuid().IsPlayer())
+    {
+        DEBUG_LOG( "Spell::EffectFriendSummon is called, but no selection or selection is not player");
+        return;
+    }
+
+    DEBUG_LOG( "Spell::EffectFriendSummon called for player %u", ((Player*)m_caster)->GetSelectionGuid().GetCounter());
+
+    m_caster->CastSpell(m_caster, m_spellInfo->EffectTriggerSpell[eff_idx], true);
 }

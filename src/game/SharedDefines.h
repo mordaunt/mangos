@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2005-2010 MaNGOS <http://getmangos.com/>
+ * Copyright (C) 2005-2011 MaNGOS <http://getmangos.com/>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -64,7 +64,16 @@ enum Races
     ((1<<(RACE_HUMAN-1))    |(1<<(RACE_ORC-1))      |(1<<(RACE_DWARF-1))   | \
     (1<<(RACE_NIGHTELF-1))  |(1<<(RACE_UNDEAD-1))   |(1<<(RACE_TAUREN-1))  | \
     (1<<(RACE_GNOME-1))     |(1<<(RACE_TROLL-1))    |(1<<(RACE_BLOODELF-1))| \
-    (1<<(RACE_DRAENEI-1)) )
+    (1<<(RACE_DRAENEI-1)))
+
+// for most cases batter use ChrRace data for team check as more safe, but when need full mask of team can be use this defines.
+#define RACEMASK_ALLIANCE \
+    ((1<<(RACE_HUMAN-1))    |(1<<(RACE_DWARF-1))    |(1<<(RACE_NIGHTELF-1))| \
+    (1<<(RACE_GNOME-1))     |(1<<(RACE_DRAENEI-1)))
+
+#define RACEMASK_HORDE \
+    ((1<<(RACE_ORC-1))      |(1<<(RACE_UNDEAD-1))   |(1<<(RACE_TAUREN-1))  | \
+    (1<<(RACE_TROLL-1))     |(1<<(RACE_BLOODELF-1)))
 
 // Class value is index in ChrClasses.dbc
 enum Classes
@@ -692,7 +701,7 @@ enum SpellEffects
     SPELL_EFFECT_CHARGE2                   = 149,
     SPELL_EFFECT_QUEST_START               = 150,
     SPELL_EFFECT_TRIGGER_SPELL_2           = 151,
-    SPELL_EFFECT_152                       = 152,
+    SPELL_EFFECT_FRIEND_SUMMON             = 152,
     SPELL_EFFECT_CREATE_PET                = 153,
     SPELL_EFFECT_TEACH_TAXI_NODE           = 154,
     SPELL_EFFECT_TITAN_GRIP                = 155,
@@ -1117,6 +1126,15 @@ enum Targets
     TARGET_DIRECTLY_FORWARD            = 89,
     TARGET_NONCOMBAT_PET               = 90,
     TARGET_OWNED_VEHICLE               = 94,
+    TARGET_UNIT_DRIVER                 = 95,
+    TARGET_UNIT_PASSENGER_0            = 96,
+    TARGET_UNIT_PASSENGER_1            = 97,
+    TARGET_UNIT_PASSENGER_2            = 98,
+    TARGET_UNIT_PASSENGER_3            = 99,
+    TARGET_UNIT_PASSENGER_4            = 100,
+    TARGET_UNIT_PASSENGER_5            = 101,
+    TARGET_UNIT_PASSENGER_6            = 102,
+    TARGET_UNIT_PASSENGER_7            = 103,
     TARGET_IN_FRONT_OF_CASTER_30       = 104,
 };
 
@@ -2481,6 +2499,8 @@ enum DiminishingGroup
     DIMINISHING_SILENCE,                                    // From 2.3.0
     DIMINISHING_FREEZE_SLEEP,                               // Hunter's Freezing Trap
     DIMINISHING_BANISH,
+    // Warrior Specific
+    DIMINISHING_CHARGE,
     // Other
     // Don't Diminish, but limit duration to 10s
     DIMINISHING_LIMITONLY

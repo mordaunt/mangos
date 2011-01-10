@@ -848,6 +848,11 @@
 			</File>
 			<File
 				RelativePath="..\..\src\game\MapUpdater.h"
+				RelativePath="..\..\src\game\MassMailMgr.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\..\src\game\MassMailMgr.h"
 				>
 			</File>
 			<File
@@ -908,14 +913,6 @@
 			</File>
 			<File
 				RelativePath="..\..\src\game\QuestHandler.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\..\src\game\ScriptCalls.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\..\src\game\ScriptCalls.h"
 				>
 			</File>
 			<File
